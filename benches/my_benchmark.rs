@@ -1,6 +1,8 @@
 #[macro_use]
 extern crate criterion;
 
+extern crate sift4;
+
 use criterion::Criterion;
 
 use city_spellcheck::*;
@@ -44,7 +46,7 @@ fn benchmark_sift3_dist(c: &mut Criterion) {
 fn benchmark_sift4_dist(c: &mut Criterion) {
     c.bench_function("sift4 dist", move |b| {
         b.iter(|| {
-            city_spellcheck::sift4("Francisco", "San Francisco");
+            sift4::sift4_simple("Francisco", "San Francisco");
         })
     });
 }

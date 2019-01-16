@@ -10,6 +10,7 @@ distance = "0.4.0"
 serde_derive = "1.0.84"
 serde = "1.0.84"
 lazy_static = "1.1.0"
+sift4 = { path = "../sift4" }
 
 [dev-dependencies]
 criterion = "0.2.7"

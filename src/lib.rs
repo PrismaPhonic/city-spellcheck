@@ -8,6 +8,9 @@ extern crate rayon;
 #[macro_use]
 extern crate serde_derive;
 
+extern crate sift4;
+use sift4::*;
+
 use std::error::Error;
 use std::fs;
 
@@ -16,9 +19,7 @@ use std::cmp::Ordering;
 use distance::*;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
-pub mod sift4;
 
-pub use sift4::sift4;
 
 /// Data-Oriented Design approach
 /// Struct of Arrays (SoA)
@@ -149,7 +150,7 @@ impl CityData {
             longitude,
         };
 
-        let str_dist = damerau_levenshtein(city, term) as f32;
+        let str_dist = sift4_simple(city, term) as f32;
         let mut str_score = if str_dist >= term.len() as f32 {
             0.0
         } else {
@@ -296,6 +297,6 @@ mod tests {
             longitude: -81.23304,
         };
         let results = cities.search("London", Some(london));
-        assert_eq!(format!("{:?}", results),"[FuzzyResult { city: \"London, 08, CA\", latitude: 42.98339, longitude: -81.23304, score: 1.0 }, FuzzyResult { city: \"London, OH, US\", latitude: 39.88645, longitude: -83.44825, score: 0.6252391 }, FuzzyResult { city: \"London, KY, US\", latitude: 37.12898, longitude: -84.08326, score: 0.6250727 }, FuzzyResult { city: \"Lyndon, KY, US\", latitude: 38.25674, longitude: -85.60163, score: 0.5209188 }, FuzzyResult { city: \"Lyndon, VT, US\", latitude: 44.51422, longitude: -72.01093, score: 0.52089393 }, FuzzyResult { city: \"Loudon, TN, US\", latitude: 35.73285, longitude: -84.33381, score: 0.5208817 }, FuzzyResult { city: \"Lindon, UT, US\", latitude: 40.34329, longitude: -111.72076, score: 0.5208387 }]");
+        assert_eq!(format!("{:?}", results),"[FuzzyResult { city: \"London, 08, CA\", latitude: 42.98339, longitude: -81.23304, score: 1.0 }, FuzzyResult { city: \"London, OH, US\", latitude: 39.88645, longitude: -83.44825, score: 0.6252391 }, FuzzyResult { city: \"London, KY, US\", latitude: 37.12898, longitude: -84.08326, score: 0.6250727 }, FuzzyResult { city: \"Lemont, IL, US\", latitude: 41.67364, longitude: -88.00173, score: 0.52094036 }, FuzzyResult { city: \"Brant, 08, CA\", latitude: 43.1334, longitude: -80.34967, score: 0.5208334 }]");
     }
 }
