@@ -1,9 +1,9 @@
-extern crate distance;
 /**
  * TODOS:
  * 1. Add enum for Region - states and provinces
 */
 extern crate rayon;
+extern crate redis;
 
 #[macro_use]
 extern crate serde_derive;
@@ -16,10 +16,9 @@ use std::fs;
 
 use std::cmp::Ordering;
 
-use distance::*;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
-
+use redis::Commands;
 
 /// Data-Oriented Design approach
 /// Struct of Arrays (SoA)
@@ -117,6 +116,53 @@ impl CityData {
                 self.add_city(name, country, region, latitude, longitude);
             };
         }
+
+        Ok(())
+    }
+
+    /// Syncs to redis at default internal ip address
+    /// Todo: Update to accept any ip addr
+    pub fn sync_to_redis(&self) -> Result<(), Box<dyn Error>> {
+        // connect to redis
+        let client = redis::Client::open("redis://127.0.0.1/")?;
+        let con = client.get_connection()?;
+
+        // throw away the result, just make sure it does not fail
+        let _: () = con.del("city-names")?;
+        let _: () = con.lpush("city-names", self.names.clone())?;
+        let _: () = con.del("city-countries")?;
+        let _: () = con.lpush("city-countries", self.countries.clone())?;
+        let _: () = con.del("city-regions")?;
+        let _: () = con.lpush("city-regions", self.regions.clone())?;
+        let _: () = con.del("city-latitudes")?;
+        let _: () = con.lpush("city-latitudes", self.latitudes.clone())?;
+        let _: () = con.del("city-longitudes")?;
+        let _: () = con.lpush("city-longitudes", self.longitudes.clone())?;
+
+        Ok(())
+    }
+
+    pub fn populate_from_redis(&mut self) -> Result<(), Box<dyn Error>> {
+        // connect to redis
+        let client = redis::Client::open("redis://127.0.0.1/")?;
+        let con = client.get_connection()?;
+
+        // get vectors from redis for cities data
+        let names: Vec<String> = con.lrange("city-names", 0, con.llen("city-names").unwrap())?;
+        let countries: Vec<String> =
+            con.lrange("city-countries", 0, con.llen("city-countries").unwrap())?;
+        let regions: Vec<String> =
+            con.lrange("city-regions", 0, con.llen("city-regions").unwrap())?;
+        let latitudes: Vec<f32> =
+            con.lrange("city-latitudes", 0, con.llen("city-latitudes").unwrap())?;
+        let longitudes: Vec<f32> =
+            con.lrange("city-longitudes", 0, con.llen("city-longitudes").unwrap())?;
+
+        self.names = names;
+        self.countries = countries;
+        self.regions = regions;
+        self.latitudes = latitudes;
+        self.longitudes = longitudes;
 
         Ok(())
     }
@@ -256,7 +302,7 @@ mod tests {
 
     #[test]
     fn test_str_dist() {
-        assert_eq!(damerau_levenshtein("Londo", "London"), 1);
+        assert_eq!(sift4_simple("Londo", "London"), 1);
     }
 
     #[test]
@@ -292,6 +338,25 @@ mod tests {
         cities
             .populate_from_file("data/cities_canada-usa-filtered.csv")
             .unwrap();
+        let london = Coordinate {
+            latitude: 42.98339,
+            longitude: -81.23304,
+        };
+        let results = cities.search("London", Some(london));
+        assert_eq!(format!("{:?}", results),"[FuzzyResult { city: \"London, 08, CA\", latitude: 42.98339, longitude: -81.23304, score: 1.0 }, FuzzyResult { city: \"London, OH, US\", latitude: 39.88645, longitude: -83.44825, score: 0.6252391 }, FuzzyResult { city: \"London, KY, US\", latitude: 37.12898, longitude: -84.08326, score: 0.6250727 }, FuzzyResult { city: \"Lemont, IL, US\", latitude: 41.67364, longitude: -88.00173, score: 0.52094036 }, FuzzyResult { city: \"Brant, 08, CA\", latitude: 43.1334, longitude: -80.34967, score: 0.5208334 }]");
+    }
+
+    #[test]
+    fn push_and_pull_redis() {
+        let mut cities_first = CityData::new();
+        cities_first
+            .populate_from_file("data/cities_canada-usa-filtered.csv")
+            .unwrap();
+        cities_first.sync_to_redis().unwrap();
+
+        let mut cities = CityData::new();
+        cities.populate_from_redis().unwrap();
+
         let london = Coordinate {
             latitude: 42.98339,
             longitude: -81.23304,

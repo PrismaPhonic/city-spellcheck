@@ -11,6 +11,7 @@ serde_derive = "1.0.84"
 serde = "1.0.84"
 lazy_static = "1.1.0"
 sift4 = { path = "../sift4" }
+redis = "0.9.1"
 
 [dev-dependencies]
 criterion = "0.2.7"
