@@ -15,17 +15,18 @@ use std::error::Error;
 use std::fs;
 
 use std::cmp::Ordering;
+use std::fmt;
 
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
-use redis::Commands;
+// use redis::Commands;
 
 /// Data-Oriented Design approach
 /// Struct of Arrays (SoA)
 #[derive(Debug)]
 pub struct CityData {
     pub names: Vec<String>,
-    pub countries: Vec<String>,
+    pub countries: Vec<Country>,
     pub regions: Vec<String>,
     pub latitudes: Vec<f32>,
     pub longitudes: Vec<f32>,
@@ -37,10 +38,19 @@ pub enum Country {
     CA,
 }
 
+impl fmt::Display for Country {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Country::US => write!(f, "US"),
+            Country::CA => write!(f, "CA"),
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct City<'a> {
     name: &'a str,
-    country: &'a str,
+    country: Country,
     region: &'a str,
     latitude: f32,
     longitude: f32,
@@ -113,6 +123,12 @@ impl CityData {
                 let latitude: f32 = latitude.parse()?;
                 let longitude: f32 = longitude.parse()?;
 
+                let country = match country {
+                    "US" => Country::US,
+                    "CA" => Country::CA,
+                    _ => continue,
+                };
+
                 self.add_city(name, country, region, latitude, longitude);
             };
         }
@@ -120,56 +136,56 @@ impl CityData {
         Ok(())
     }
 
-    /// Syncs to redis at default internal ip address
-    /// Todo: Update to accept any ip addr
-    pub fn sync_to_redis(&self) -> Result<(), Box<dyn Error>> {
-        // connect to redis
-        let client = redis::Client::open("redis://127.0.0.1/")?;
-        let con = client.get_connection()?;
+    // /// Syncs to redis at default internal ip address
+    // /// Todo: Update to accept any ip addr
+    // pub fn sync_to_redis(&self) -> Result<(), Box<dyn Error>> {
+    //     // connect to redis
+    //     let client = redis::Client::open("redis://127.0.0.1/")?;
+    //     let con = client.get_connection()?;
 
-        // throw away the result, just make sure it does not fail
-        let _: () = con.del("city-names")?;
-        let _: () = con.lpush("city-names", self.names.clone())?;
-        let _: () = con.del("city-countries")?;
-        let _: () = con.lpush("city-countries", self.countries.clone())?;
-        let _: () = con.del("city-regions")?;
-        let _: () = con.lpush("city-regions", self.regions.clone())?;
-        let _: () = con.del("city-latitudes")?;
-        let _: () = con.lpush("city-latitudes", self.latitudes.clone())?;
-        let _: () = con.del("city-longitudes")?;
-        let _: () = con.lpush("city-longitudes", self.longitudes.clone())?;
+    //     // throw away the result, just make sure it does not fail
+    //     let _: () = con.del("city-names")?;
+    //     let _: () = con.lpush("city-names", self.names.clone())?;
+    //     let _: () = con.del("city-countries")?;
+    //     let _: () = con.lpush("city-countries", self.countries.clone())?;
+    //     let _: () = con.del("city-regions")?;
+    //     let _: () = con.lpush("city-regions", self.regions.clone())?;
+    //     let _: () = con.del("city-latitudes")?;
+    //     let _: () = con.lpush("city-latitudes", self.latitudes.clone())?;
+    //     let _: () = con.del("city-longitudes")?;
+    //     let _: () = con.lpush("city-longitudes", self.longitudes.clone())?;
 
-        Ok(())
-    }
+    //     Ok(())
+    // }
 
-    pub fn populate_from_redis(&mut self) -> Result<(), Box<dyn Error>> {
-        // connect to redis
-        let client = redis::Client::open("redis://127.0.0.1/")?;
-        let con = client.get_connection()?;
+    // pub fn populate_from_redis(&mut self) -> Result<(), Box<dyn Error>> {
+    //     // connect to redis
+    //     let client = redis::Client::open("redis://127.0.0.1/")?;
+    //     let con = client.get_connection()?;
 
-        // get vectors from redis for cities data
-        let names: Vec<String> = con.lrange("city-names", 0, con.llen("city-names").unwrap())?;
-        let countries: Vec<String> =
-            con.lrange("city-countries", 0, con.llen("city-countries").unwrap())?;
-        let regions: Vec<String> =
-            con.lrange("city-regions", 0, con.llen("city-regions").unwrap())?;
-        let latitudes: Vec<f32> =
-            con.lrange("city-latitudes", 0, con.llen("city-latitudes").unwrap())?;
-        let longitudes: Vec<f32> =
-            con.lrange("city-longitudes", 0, con.llen("city-longitudes").unwrap())?;
+    //     // get vectors from redis for cities data
+    //     let names: Vec<String> = con.lrange("city-names", 0, con.llen("city-names").unwrap())?;
+    //     let countries: Vec<String> =
+    //         con.lrange("city-countries", 0, con.llen("city-countries").unwrap())?;
+    //     let regions: Vec<String> =
+    //         con.lrange("city-regions", 0, con.llen("city-regions").unwrap())?;
+    //     let latitudes: Vec<f32> =
+    //         con.lrange("city-latitudes", 0, con.llen("city-latitudes").unwrap())?;
+    //     let longitudes: Vec<f32> =
+    //         con.lrange("city-longitudes", 0, con.llen("city-longitudes").unwrap())?;
 
-        self.names = names;
-        self.countries = countries;
-        self.regions = regions;
-        self.latitudes = latitudes;
-        self.longitudes = longitudes;
+    //     self.names = names;
+    //     self.countries = countries;
+    //     self.regions = regions;
+    //     self.latitudes = latitudes;
+    //     self.longitudes = longitudes;
 
-        Ok(())
-    }
+    //     Ok(())
+    // }
 
-    fn add_city(&mut self, name: &str, country: &str, region: &str, latitude: f32, longitude: f32) {
+    fn add_city(&mut self, name: &str, country: Country, region: &str, latitude: f32, longitude: f32) {
         self.names.push(name.to_string());
-        self.countries.push(country.to_string());
+        self.countries.push(country);
         self.regions.push(region.to_string());
         self.latitudes.push(latitude);
         self.longitudes.push(longitude);
@@ -178,7 +194,7 @@ impl CityData {
     pub fn get_city(&self, idx: usize) -> City {
         City {
             name: &self.names[idx],
-            country: &self.countries[idx],
+            country: self.countries[idx],
             region: &self.regions[idx],
             latitude: self.latitudes[idx],
             longitude: self.longitudes[idx],
@@ -280,15 +296,15 @@ mod tests {
     #[test]
     fn test_citydata_struct_nyc() {
         let mut cities = CityData::new();
-        cities.add_city("New York City", "US", "NY", 40.7128, 74.0060);
-        assert_eq!(format!("{:?}", cities.get_city(0)), "City { name: \"New York City\", country: \"US\", region: \"NY\", latitude: 40.7128, longitude: 74.006 }");
+        cities.add_city("New York City", Country::US, "NY", 40.7128, 74.0060);
+        assert_eq!(format!("{:?}", cities.get_city(0)), "City { name: \"New York City\", country: US, region: \"NY\", latitude: 40.7128, longitude: 74.006 }");
     }
 
     #[test]
     fn test_citydata_struct_sf() {
         let mut cities = CityData::new();
-        cities.add_city("San Francisco", "US", "CA", 37.7749, 122.4194);
-        assert_eq!(format!("{:?}", cities.get_city(0)), "City { name: \"San Francisco\", country: \"US\", region: \"CA\", latitude: 37.7749, longitude: 122.4194 }");
+        cities.add_city("San Francisco", Country::US, "CA", 37.7749, 122.4194);
+        assert_eq!(format!("{:?}", cities.get_city(0)), "City { name: \"San Francisco\", country: US, region: \"CA\", latitude: 37.7749, longitude: 122.4194 }");
     }
 
     #[test]
@@ -297,7 +313,7 @@ mod tests {
         cities
             .populate_from_file("data/cities_canada-usa-filtered.csv")
             .unwrap();
-        assert_eq!(format!("{:?}", cities.get_city(0)), "City { name: \"Abbotsford\", country: \"CA\", region: \"02\", latitude: 49.05798, longitude: -122.25257 }");
+        assert_eq!(format!("{:?}", cities.get_city(0)), "City { name: \"Abbotsford\", country: CA, region: \"02\", latitude: 49.05798, longitude: -122.25257 }");
     }
 
     #[test]
@@ -346,22 +362,22 @@ mod tests {
         assert_eq!(format!("{:?}", results),"[FuzzyResult { city: \"London, 08, CA\", latitude: 42.98339, longitude: -81.23304, score: 1.0 }, FuzzyResult { city: \"London, OH, US\", latitude: 39.88645, longitude: -83.44825, score: 0.6252391 }, FuzzyResult { city: \"London, KY, US\", latitude: 37.12898, longitude: -84.08326, score: 0.6250727 }, FuzzyResult { city: \"Lemont, IL, US\", latitude: 41.67364, longitude: -88.00173, score: 0.52094036 }, FuzzyResult { city: \"Brant, 08, CA\", latitude: 43.1334, longitude: -80.34967, score: 0.5208334 }]");
     }
 
-    #[test]
-    fn push_and_pull_redis() {
-        let mut cities_first = CityData::new();
-        cities_first
-            .populate_from_file("data/cities_canada-usa-filtered.csv")
-            .unwrap();
-        cities_first.sync_to_redis().unwrap();
+    // #[test]
+    // fn push_and_pull_redis() {
+    //     let mut cities_first = CityData::new();
+    //     cities_first
+    //         .populate_from_file("data/cities_canada-usa-filtered.csv")
+    //         .unwrap();
+    //     cities_first.sync_to_redis().unwrap();
 
-        let mut cities = CityData::new();
-        cities.populate_from_redis().unwrap();
+    //     let mut cities = CityData::new();
+    //     cities.populate_from_redis().unwrap();
 
-        let london = Coordinate {
-            latitude: 42.98339,
-            longitude: -81.23304,
-        };
-        let results = cities.search("London", Some(london));
-        assert_eq!(format!("{:?}", results),"[FuzzyResult { city: \"London, 08, CA\", latitude: 42.98339, longitude: -81.23304, score: 1.0 }, FuzzyResult { city: \"London, OH, US\", latitude: 39.88645, longitude: -83.44825, score: 0.6252391 }, FuzzyResult { city: \"London, KY, US\", latitude: 37.12898, longitude: -84.08326, score: 0.6250727 }, FuzzyResult { city: \"Lemont, IL, US\", latitude: 41.67364, longitude: -88.00173, score: 0.52094036 }, FuzzyResult { city: \"Brant, 08, CA\", latitude: 43.1334, longitude: -80.34967, score: 0.5208334 }]");
-    }
+    //     let london = Coordinate {
+    //         latitude: 42.98339,
+    //         longitude: -81.23304,
+    //     };
+    //     let results = cities.search("London", Some(london));
+    //     assert_eq!(format!("{:?}", results),"[FuzzyResult { city: \"London, 08, CA\", latitude: 42.98339, longitude: -81.23304, score: 1.0 }, FuzzyResult { city: \"London, OH, US\", latitude: 39.88645, longitude: -83.44825, score: 0.6252391 }, FuzzyResult { city: \"London, KY, US\", latitude: 37.12898, longitude: -84.08326, score: 0.6250727 }, FuzzyResult { city: \"Lemont, IL, US\", latitude: 41.67364, longitude: -88.00173, score: 0.52094036 }, FuzzyResult { city: \"Brant, 08, CA\", latitude: 43.1334, longitude: -80.34967, score: 0.5208334 }]");
+    // }
 }
