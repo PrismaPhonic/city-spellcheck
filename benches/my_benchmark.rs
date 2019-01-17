@@ -19,6 +19,16 @@ fn benchmark_populate_from_file(c: &mut Criterion) {
     });
 }
 
+fn benchmark_populate_from_redis(c: &mut Criterion) {
+    let mut cities = CityData::new();
+    c.bench_function("load from redis", move |b| {
+        b.iter(|| {
+            cities
+                .populate_from_redis().unwrap();
+        })
+    });
+}
+
 fn benchmark_phys_dist(c: &mut Criterion) {
     let sf = Coordinate::new(37.774929, -122.419416);
     let nyc = Coordinate::new(40.730610, -73.935242);
@@ -92,6 +102,7 @@ fn benchmark_search_with_gps(c: &mut Criterion) {
 criterion_group!(
     benches,
     benchmark_populate_from_file,
+    benchmark_populate_from_redis,
     benchmark_phys_dist,
     benchmark_levenshtein_dist,
     benchmark_sift3_dist,

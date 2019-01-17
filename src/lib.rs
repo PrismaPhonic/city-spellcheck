@@ -175,7 +175,7 @@ impl CityData {
         self.longitudes.push(longitude);
     }
 
-    fn get_city(&self, idx: usize) -> City {
+    pub fn get_city(&self, idx: usize) -> City {
         City {
             name: &self.names[idx],
             country: &self.countries[idx],
