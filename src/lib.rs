@@ -1,28 +1,15 @@
-/**
- * TODOS:
- * 1. Add enum for Region - states and provinces
-*/
-extern crate rayon;
-extern crate redis;
-
 #[macro_use]
 extern crate serde_derive;
-
+extern crate rayon;
+extern crate redis;
 extern crate sift4;
+use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use sift4::*;
-
+use std::cmp::Ordering;
 use std::error::Error;
+use std::fmt;
 use std::fs;
 
-use std::cmp::Ordering;
-use std::fmt;
-
-use rayon::iter::{IntoParallelIterator, ParallelIterator};
-
-// use redis::Commands;
-
-/// Data-Oriented Design approach
-/// Struct of Arrays (SoA)
 #[derive(Debug)]
 pub struct CityData {
     pub names: Vec<String>,
@@ -40,13 +27,35 @@ pub enum Country {
 
 #[derive(Debug, Copy, Clone)]
 pub enum Region {
-    Province,
-    Territory,
-    States(State),
+    Province(CAProvince),
+    Territory(CATerritory),
+    State(USState),
+    None,
 }
 
 #[derive(Debug, Copy, Clone)]
-pub enum State {
+pub enum CAProvince {
+    ON,
+    QC,
+    NS,
+    NB,
+    MB,
+    BC,
+    PE,
+    SK,
+    AB,
+    NL,
+}
+
+#[derive(Debug, Copy, Clone)]
+pub enum CATerritory {
+    NT,
+    NU,
+    YT,
+}
+
+#[derive(Debug, Copy, Clone)]
+pub enum USState {
     AL,
     AK,
     AZ,
@@ -111,57 +120,70 @@ impl fmt::Display for Country {
 impl fmt::Display for Region {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Region::States(State::AL) => write!(f, "AL"),
-            Region::States(State::AK) => write!(f, "AK"),
-            Region::States(State::AZ) => write!(f, "AZ"),
-            Region::States(State::AR) => write!(f, "AR"),
-            Region::States(State::CA) => write!(f, "CA"),
-            Region::States(State::CO) => write!(f, "CO"),
-            Region::States(State::CT) => write!(f, "CT"),
-            Region::States(State::DE) => write!(f, "DE"),
-            Region::States(State::FL) => write!(f, "FL"),
-            Region::States(State::GA) => write!(f, "GA"),
-            Region::States(State::HI) => write!(f, "HI"),
-            Region::States(State::ID) => write!(f, "ID"),
-            Region::States(State::IL) => write!(f, "IL"),
-            Region::States(State::IN) => write!(f, "IN"),
-            Region::States(State::IA) => write!(f, "IA"),
-            Region::States(State::KS) => write!(f, "KS"),
-            Region::States(State::KY) => write!(f, "KY"),
-            Region::States(State::LA) => write!(f, "LA"),
-            Region::States(State::ME) => write!(f, "ME"),
-            Region::States(State::MD) => write!(f, "MD"),
-            Region::States(State::MA) => write!(f, "MA"),
-            Region::States(State::MI) => write!(f, "MI"),
-            Region::States(State::MN) => write!(f, "MN"),
-            Region::States(State::MS) => write!(f, "MS"),
-            Region::States(State::MO) => write!(f, "MO"),
-            Region::States(State::MT) => write!(f, "MT"),
-            Region::States(State::NE) => write!(f, "NE"),
-            Region::States(State::NV) => write!(f, "NV"),
-            Region::States(State::NH) => write!(f, "NH"),
-            Region::States(State::NJ) => write!(f, "NJ"),
-            Region::States(State::NM) => write!(f, "NM"),
-            Region::States(State::NY) => write!(f, "NY"),
-            Region::States(State::NC) => write!(f, "NC"),
-            Region::States(State::ND) => write!(f, "ND"),
-            Region::States(State::OH) => write!(f, "OH"),
-            Region::States(State::OK) => write!(f, "OK"),
-            Region::States(State::OR) => write!(f, "OR"),
-            Region::States(State::PA) => write!(f, "PA"),
-            Region::States(State::RI) => write!(f, "RI"),
-            Region::States(State::SC) => write!(f, "SC"),
-            Region::States(State::SD) => write!(f, "SD"),
-            Region::States(State::TN) => write!(f, "TN"),
-            Region::States(State::TX) => write!(f, "TX"),
-            Region::States(State::UT) => write!(f, "UT"),
-            Region::States(State::VT) => write!(f, "VT"),
-            Region::States(State::VA) => write!(f, "VA"),
-            Region::States(State::WA) => write!(f, "WA"),
-            Region::States(State::WV) => write!(f, "WV"),
-            Region::States(State::WI) => write!(f, "WI"),
-            Region::States(State::WY) => write!(f, "WY"),
-            _ => write!(f, ""),
+            Region::State(USState::AL) => write!(f, "AL"),
+            Region::State(USState::AK) => write!(f, "AK"),
+            Region::State(USState::AZ) => write!(f, "AZ"),
+            Region::State(USState::AR) => write!(f, "AR"),
+            Region::State(USState::CA) => write!(f, "CA"),
+            Region::State(USState::CO) => write!(f, "CO"),
+            Region::State(USState::CT) => write!(f, "CT"),
+            Region::State(USState::DE) => write!(f, "DE"),
+            Region::State(USState::FL) => write!(f, "FL"),
+            Region::State(USState::GA) => write!(f, "GA"),
+            Region::State(USState::HI) => write!(f, "HI"),
+            Region::State(USState::ID) => write!(f, "ID"),
+            Region::State(USState::IL) => write!(f, "IL"),
+            Region::State(USState::IN) => write!(f, "IN"),
+            Region::State(USState::IA) => write!(f, "IA"),
+            Region::State(USState::KS) => write!(f, "KS"),
+            Region::State(USState::KY) => write!(f, "KY"),
+            Region::State(USState::LA) => write!(f, "LA"),
+            Region::State(USState::ME) => write!(f, "ME"),
+            Region::State(USState::MD) => write!(f, "MD"),
+            Region::State(USState::MA) => write!(f, "MA"),
+            Region::State(USState::MI) => write!(f, "MI"),
+            Region::State(USState::MN) => write!(f, "MN"),
+            Region::State(USState::MS) => write!(f, "MS"),
+            Region::State(USState::MO) => write!(f, "MO"),
+            Region::State(USState::MT) => write!(f, "MT"),
+            Region::State(USState::NE) => write!(f, "NE"),
+            Region::State(USState::NV) => write!(f, "NV"),
+            Region::State(USState::NH) => write!(f, "NH"),
+            Region::State(USState::NJ) => write!(f, "NJ"),
+            Region::State(USState::NM) => write!(f, "NM"),
+            Region::State(USState::NY) => write!(f, "NY"),
+            Region::State(USState::NC) => write!(f, "NC"),
+            Region::State(USState::ND) => write!(f, "ND"),
+            Region::State(USState::OH) => write!(f, "OH"),
+            Region::State(USState::OK) => write!(f, "OK"),
+            Region::State(USState::OR) => write!(f, "OR"),
+            Region::State(USState::PA) => write!(f, "PA"),
+            Region::State(USState::RI) => write!(f, "RI"),
+            Region::State(USState::SC) => write!(f, "SC"),
+            Region::State(USState::SD) => write!(f, "SD"),
+            Region::State(USState::TN) => write!(f, "TN"),
+            Region::State(USState::TX) => write!(f, "TX"),
+            Region::State(USState::UT) => write!(f, "UT"),
+            Region::State(USState::VT) => write!(f, "VT"),
+            Region::State(USState::VA) => write!(f, "VA"),
+            Region::State(USState::WA) => write!(f, "WA"),
+            Region::State(USState::WV) => write!(f, "WV"),
+            Region::State(USState::WI) => write!(f, "WI"),
+            Region::State(USState::WY) => write!(f, "WY"),
+            Region::Province(CAProvince::AB) => write!(f, "AB"),
+            Region::Province(CAProvince::BC) => write!(f, "BC"),
+            Region::Province(CAProvince::MB) => write!(f, "MB"),
+            Region::Province(CAProvince::NB) => write!(f, "NB"),
+            Region::Province(CAProvince::NL) => write!(f, "NL"),
+            Region::Province(CAProvince::NS) => write!(f, "NS"),
+            Region::Province(CAProvince::ON) => write!(f, "ON"),
+            Region::Province(CAProvince::PE) => write!(f, "PE"),
+            Region::Province(CAProvince::QC) => write!(f, "QC"),
+            Region::Province(CAProvince::SK) => write!(f, "SK"),
+            Region::Territory(CATerritory::NT) => write!(f, "NT"),
+            Region::Territory(CATerritory::NU) => write!(f, "NU"),
+            Region::Territory(CATerritory::YT) => write!(f, "YT"),
+            Region::None => write!(f, ""),
         }
     }
 }
@@ -249,8 +271,8 @@ impl CityData {
                 };
 
                 let region = match country {
-                    Country::US => CityData::state_match(region),
-                    Country::CA => Region::Territory,
+                    Country::US => CityData::us_match(region),
+                    Country::CA => CityData::ca_match(region),
                 };
 
                 self.add_city(name, country, region, latitude, longitude);
@@ -260,59 +282,81 @@ impl CityData {
         Ok(())
     }
 
-    fn state_match(region: &str) -> Region {
+    // Matches admin1 codes:
+    // http://download.geonames.org/export/dump/admin1CodesASCII.txt
+    fn ca_match(region: &str) -> Region {
         match region {
-            "AL" => Region::States(State::AL),
-            "AK" => Region::States(State::AK),
-            "AZ" => Region::States(State::AZ),
-            "AR" => Region::States(State::AR),
-            "CA" => Region::States(State::CA),
-            "CO" => Region::States(State::CO),
-            "CT" => Region::States(State::CT),
-            "DE" => Region::States(State::DE),
-            "FL" => Region::States(State::FL),
-            "GA" => Region::States(State::GA),
-            "HI" => Region::States(State::HI),
-            "ID" => Region::States(State::ID),
-            "IL" => Region::States(State::IL),
-            "IN" => Region::States(State::IN),
-            "IA" => Region::States(State::IA),
-            "KS" => Region::States(State::KS),
-            "KY" => Region::States(State::KY),
-            "LA" => Region::States(State::LA),
-            "ME" => Region::States(State::ME),
-            "MD" => Region::States(State::MD),
-            "MA" => Region::States(State::MA),
-            "MI" => Region::States(State::MI),
-            "MN" => Region::States(State::MN),
-            "MS" => Region::States(State::MS),
-            "MO" => Region::States(State::MO),
-            "MT" => Region::States(State::MT),
-            "NE" => Region::States(State::NE),
-            "NV" => Region::States(State::NV),
-            "NH" => Region::States(State::NH),
-            "NJ" => Region::States(State::NJ),
-            "NM" => Region::States(State::NM),
-            "NY" => Region::States(State::NY),
-            "NC" => Region::States(State::NC),
-            "ND" => Region::States(State::ND),
-            "OH" => Region::States(State::OH),
-            "OK" => Region::States(State::OK),
-            "OR" => Region::States(State::OR),
-            "PA" => Region::States(State::PA),
-            "RI" => Region::States(State::RI),
-            "SC" => Region::States(State::SC),
-            "SD" => Region::States(State::SD),
-            "TN" => Region::States(State::TN),
-            "TX" => Region::States(State::TX),
-            "UT" => Region::States(State::UT),
-            "VT" => Region::States(State::VT),
-            "VA" => Region::States(State::VA),
-            "WA" => Region::States(State::WA),
-            "WV" => Region::States(State::WV),
-            "WI" => Region::States(State::WI),
-            "WY" => Region::States(State::WY),
-            _ => Region::Territory,
+            "01" => Region::Province(CAProvince::AB),
+            "02" => Region::Province(CAProvince::BC),
+            "03" => Region::Province(CAProvince::MB),
+            "04" => Region::Province(CAProvince::NB),
+            "05" => Region::Province(CAProvince::NL),
+            "07" => Region::Province(CAProvince::NS),
+            "08" => Region::Province(CAProvince::ON),
+            "09" => Region::Province(CAProvince::PE),
+            "10" => Region::Province(CAProvince::QC),
+            "11" => Region::Province(CAProvince::SK),
+            "12" => Region::Territory(CATerritory::YT),
+            "13" => Region::Territory(CATerritory::NT),
+            "14" => Region::Territory(CATerritory::NU),
+            _ => Region::None,
+        }
+    }
+
+    fn us_match(region: &str) -> Region {
+        match region {
+            "AL" => Region::State(USState::AL),
+            "AK" => Region::State(USState::AK),
+            "AZ" => Region::State(USState::AZ),
+            "AR" => Region::State(USState::AR),
+            "CA" => Region::State(USState::CA),
+            "CO" => Region::State(USState::CO),
+            "CT" => Region::State(USState::CT),
+            "DE" => Region::State(USState::DE),
+            "FL" => Region::State(USState::FL),
+            "GA" => Region::State(USState::GA),
+            "HI" => Region::State(USState::HI),
+            "ID" => Region::State(USState::ID),
+            "IL" => Region::State(USState::IL),
+            "IN" => Region::State(USState::IN),
+            "IA" => Region::State(USState::IA),
+            "KS" => Region::State(USState::KS),
+            "KY" => Region::State(USState::KY),
+            "LA" => Region::State(USState::LA),
+            "ME" => Region::State(USState::ME),
+            "MD" => Region::State(USState::MD),
+            "MA" => Region::State(USState::MA),
+            "MI" => Region::State(USState::MI),
+            "MN" => Region::State(USState::MN),
+            "MS" => Region::State(USState::MS),
+            "MO" => Region::State(USState::MO),
+            "MT" => Region::State(USState::MT),
+            "NE" => Region::State(USState::NE),
+            "NV" => Region::State(USState::NV),
+            "NH" => Region::State(USState::NH),
+            "NJ" => Region::State(USState::NJ),
+            "NM" => Region::State(USState::NM),
+            "NY" => Region::State(USState::NY),
+            "NC" => Region::State(USState::NC),
+            "ND" => Region::State(USState::ND),
+            "OH" => Region::State(USState::OH),
+            "OK" => Region::State(USState::OK),
+            "OR" => Region::State(USState::OR),
+            "PA" => Region::State(USState::PA),
+            "RI" => Region::State(USState::RI),
+            "SC" => Region::State(USState::SC),
+            "SD" => Region::State(USState::SD),
+            "TN" => Region::State(USState::TN),
+            "TX" => Region::State(USState::TX),
+            "UT" => Region::State(USState::UT),
+            "VT" => Region::State(USState::VT),
+            "VA" => Region::State(USState::VA),
+            "WA" => Region::State(USState::WA),
+            "WV" => Region::State(USState::WV),
+            "WI" => Region::State(USState::WI),
+            "WY" => Region::State(USState::WY),
+            // we never hit the catch all - better way to write this?
+            _ => Region::State(USState::CA),
         }
     }
 
@@ -439,7 +483,7 @@ mod tests {
         cities.add_city(
             "New York City",
             Country::US,
-            Region::States(State::NY),
+            Region::State(USState::NY),
             40.7128,
             74.0060,
         );
@@ -452,7 +496,7 @@ mod tests {
         cities.add_city(
             "San Francisco",
             Country::US,
-            Region::States(State::CA),
+            Region::State(USState::CA),
             37.7749,
             122.4194,
         );
