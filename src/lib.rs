@@ -1,3 +1,56 @@
+// Licensed under the the MIT license
+// <LICENSE-MIT or http://opensource.org/licenses/MIT>.
+// This file may not be copied, modified, or distributed
+// except according to those terms.
+
+//! This crate provides a library for spell correction of city names
+//! using a fuzzy search scoring system that has optional weighting for
+//! distance.
+//!
+//! What that means is that if you supply your current GPS coordinates, then the
+//! spelling correction suggested results takes your current location heavily into
+//! account when scoring each potential match.
+//!
+//! Currently only supports USA and Canada, working on expanding to other countries ASAP.
+//!
+//! # Setup
+//!
+//! To use this library just add city_spellcheck to your `Cargo.toml` file:
+//!
+//! ```
+//! [dependencies]
+//! city_spellcheck = "0.1.0"
+//! ```
+//!
+//! Now you can use it:
+//!
+//! ```
+//! use city_spellcheck::*;
+//! ```
+//!
+//! To take a look at a very simple RESTful API (with only one route) that uses this library,
+//! check out the [City-Spellcheck Web Api](https://github.com/PrismaPhonic/city-spellcheck-web-api)
+//!
+//! # Example Use Case
+//!
+//! ```rust
+//! use city_spellcheck::*;
+//!
+//! let mut cities = CityData::new();
+//! cities
+//!     .populate_from_file("data/cities_canada-usa-filtered.csv")
+//!     .unwrap();
+//! let london = Coordinate::new(42.98339, -81.23304);
+//!     
+//! let results = cities.search("London", Some(london));
+//! assert_eq!(
+//!     format!("{:?}", results),
+//!     "[FuzzyResult { city: \"London, ON, CA\", latitude: 42.98339, longitude: -81.23304, score: 1.0 }, FuzzyResult { city: \"London, OH, US\", latitude: 39.88645, longitude: -83.44825, score: 0.6252391 }, FuzzyResult { city: \"London, KY, US\", latitude: 37.12898, longitude: -84.08326, score: 0.6250727 }, FuzzyResult { city: \"Lemont, IL, US\", latitude: 41.67364, longitude: -88.00173, score: 0.52094036 }, FuzzyResult { city: \"Brant, ON, CA\", latitude: 43.1334, longitude: -80.34967, score: 0.5208334 }]");
+//! ```
+//!
+//! Please explore this documentation to learn more. Nearly all useful methods are on the CityData
+//! struct.
+
 #[macro_use]
 extern crate serde_derive;
 extern crate rayon;
@@ -238,7 +291,7 @@ impl CityData {
     ///
     /// Supply an index and get back the city at that index.
     ///
-    /// ## Example
+    /// # Example
     ///
     /// ```rust
     ///
@@ -264,7 +317,20 @@ impl CityData {
     }
 
     /// `total_score` takes into account location as well as
-    /// string distance using sift4 algorithm
+    /// string distance using sift4 algorithm. Supply the index of the city
+    /// and optionally a Coordinate instance representing your current location.
+    /// `total_score` will then return a weighted fuzzy match score.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// let mut cities = city_spellcheck::CityData::new();
+    /// cities
+    ///     .populate_from_file("data/cities_canada-usa-filtered.csv")
+    ///     .unwrap();
+    /// assert_eq!(cities.total_score("Abbotsfor", 0, None), 0.88888896);
+    /// ```
+    ///
     pub fn total_score(&self, term: &str, idx: usize, loc: Option<Coordinate>) -> f32 {
         let city = &self.names[idx];
         let latitude = self.latitudes[idx];
@@ -304,7 +370,18 @@ impl CityData {
         (str_score * 5.0 + dist_score * 3.0) / 8.0
     }
 
-    /// Finds circular distance from two gps coordinates using haversine formula
+    /// Finds circular distance from two gps coordinates using haversine formula.
+    /// Just supply two locations as Coordinate instances and get back distance
+    /// in **kilometers**.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// let sf = city_spellcheck::Coordinate::new(37.774929, -122.419416);
+    /// let nyc = city_spellcheck::Coordinate::new(40.730610, -73.935242);
+    ///
+    /// assert_eq!(city_spellcheck::CityData::find_distance_earth(sf, nyc), 4135.694);
+    /// ```
     pub fn find_distance_earth(loc1: Coordinate, loc2: Coordinate) -> f32 {
         const R: f32 = 6372.8;
         let Coordinate {
@@ -335,6 +412,28 @@ impl CityData {
         }
     }
 
+    /// `search` will search through **all** the cities stored in CityData, optionally
+    /// including a set of coordinates for distance weighting, and return a vector
+    /// of FuzzyResult's (instances that include the city name in a human readable format,
+    /// the lat and long of the city, and the fuzzy score).
+    ///
+    /// `search` sorts results from highest score (1.0 max) to lowest score. `search` only
+    /// shows results with a score greater than 0.5.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// let mut cities = city_spellcheck::CityData::new();
+    /// cities
+    ///     .populate_from_file("data/cities_canada-usa-filtered.csv")
+    ///     .unwrap();
+    /// let london = city_spellcheck::Coordinate::new(42.98339, -81.23304);
+    ///     
+    /// let results = cities.search("London", Some(london));
+    /// assert_eq!(
+    ///     format!("{:?}", results),
+    ///     "[FuzzyResult { city: \"London, ON, CA\", latitude: 42.98339, longitude: -81.23304, score: 1.0 }, FuzzyResult { city: \"London, OH, US\", latitude: 39.88645, longitude: -83.44825, score: 0.6252391 }, FuzzyResult { city: \"London, KY, US\", latitude: 37.12898, longitude: -84.08326, score: 0.6250727 }, FuzzyResult { city: \"Lemont, IL, US\", latitude: 41.67364, longitude: -88.00173, score: 0.52094036 }, FuzzyResult { city: \"Brant, ON, CA\", latitude: 43.1334, longitude: -80.34967, score: 0.5208334 }]");
+    /// ```
     pub fn search(&self, term: &str, loc: Option<Coordinate>) -> Vec<FuzzyResult> {
         let mut found: Vec<(usize, f32)> = (0..self.names.len())
             .into_par_iter()

@@ -1,5 +1,7 @@
 use std::fmt;
 
+/// Enum for country regions - currently just supports US and Canada (States, Territories,
+/// and Provinces)
 #[derive(Debug, Copy, Clone)]
 pub enum Region {
     Province(CAProvince),
@@ -8,6 +10,7 @@ pub enum Region {
     None,
 }
 
+/// An enum where the variants are all of the Canadian provinces
 #[derive(Debug, Copy, Clone)]
 pub enum CAProvince {
     ON,
@@ -22,6 +25,7 @@ pub enum CAProvince {
     NL,
 }
 
+/// An enum where the variants are all of the Canadian territories
 #[derive(Debug, Copy, Clone)]
 pub enum CATerritory {
     NT,
@@ -29,6 +33,7 @@ pub enum CATerritory {
     YT,
 }
 
+/// An enum of all US States
 #[derive(Debug, Copy, Clone)]
 pub enum USState {
     AL,
