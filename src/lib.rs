@@ -17,14 +17,14 @@
 //!
 //! To use this library just add city_spellcheck to your `Cargo.toml` file:
 //!
-//! ```
+//! ```toml
 //! [dependencies]
 //! city_spellcheck = "0.1.0"
 //! ```
 //!
 //! Now you can use it:
 //!
-//! ```
+//! ```rust
 //! use city_spellcheck::*;
 //! ```
 //!
