@@ -1,4 +1,9 @@
 # City Spellcheck 
+[![Build
+Status](https://travis-ci.org/prismaphonic/city-spellcheck.svg?branch=master)](https://travis-ci.org/prismaphonic/city-spellcheck)
+[![crates.io](http://meritbadge.herokuapp.com/city_spellcheck)](https://crates.io/crates/city_spellcheck)
+[![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
+[![Released API docs](https://docs.rs/city_spellcheck/badge.svg)](https://docs.rs/city_spellcheck)
 
 This crate provides a library for spell correction of city names
 using a fuzzy search scoring system that has optional weighting for
