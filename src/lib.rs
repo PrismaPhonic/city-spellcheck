@@ -7,187 +7,29 @@ use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use sift4::*;
 use std::cmp::Ordering;
 use std::error::Error;
-use std::fmt;
 use std::fs;
 
+/// countries holds a country enum with valid countries
+pub mod countries;
+
+/// regions holds enums and implementations to display variants in english friendly string format
+pub mod regions;
+
+use self::countries::*;
+use self::regions::*;
+
+/// CityData holds all city data, each city is stored vertically across fields at a given index
 #[derive(Debug)]
 pub struct CityData {
-    pub names: Vec<String>,
-    pub countries: Vec<Country>,
-    pub regions: Vec<Region>,
-    pub latitudes: Vec<f32>,
-    pub longitudes: Vec<f32>,
+    names: Vec<String>,
+    countries: Vec<Country>,
+    regions: Vec<Region>,
+    latitudes: Vec<f32>,
+    longitudes: Vec<f32>,
 }
 
-#[derive(Debug, Copy, Clone)]
-pub enum Country {
-    US,
-    CA,
-}
-
-#[derive(Debug, Copy, Clone)]
-pub enum Region {
-    Province(CAProvince),
-    Territory(CATerritory),
-    State(USState),
-    None,
-}
-
-#[derive(Debug, Copy, Clone)]
-pub enum CAProvince {
-    ON,
-    QC,
-    NS,
-    NB,
-    MB,
-    BC,
-    PE,
-    SK,
-    AB,
-    NL,
-}
-
-#[derive(Debug, Copy, Clone)]
-pub enum CATerritory {
-    NT,
-    NU,
-    YT,
-}
-
-#[derive(Debug, Copy, Clone)]
-pub enum USState {
-    AL,
-    AK,
-    AZ,
-    AR,
-    CA,
-    CO,
-    CT,
-    DE,
-    FL,
-    GA,
-    HI,
-    ID,
-    IL,
-    IN,
-    IA,
-    KS,
-    KY,
-    LA,
-    ME,
-    MD,
-    MA,
-    MI,
-    MN,
-    MS,
-    MO,
-    MT,
-    NE,
-    NV,
-    NH,
-    NJ,
-    NM,
-    NY,
-    NC,
-    ND,
-    OH,
-    OK,
-    OR,
-    PA,
-    RI,
-    SC,
-    SD,
-    TN,
-    TX,
-    UT,
-    VT,
-    VA,
-    WA,
-    WV,
-    WI,
-    WY,
-}
-
-impl fmt::Display for Country {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            Country::US => write!(f, "US"),
-            Country::CA => write!(f, "CA"),
-        }
-    }
-}
-
-impl fmt::Display for Region {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            Region::State(USState::AL) => write!(f, "AL"),
-            Region::State(USState::AK) => write!(f, "AK"),
-            Region::State(USState::AZ) => write!(f, "AZ"),
-            Region::State(USState::AR) => write!(f, "AR"),
-            Region::State(USState::CA) => write!(f, "CA"),
-            Region::State(USState::CO) => write!(f, "CO"),
-            Region::State(USState::CT) => write!(f, "CT"),
-            Region::State(USState::DE) => write!(f, "DE"),
-            Region::State(USState::FL) => write!(f, "FL"),
-            Region::State(USState::GA) => write!(f, "GA"),
-            Region::State(USState::HI) => write!(f, "HI"),
-            Region::State(USState::ID) => write!(f, "ID"),
-            Region::State(USState::IL) => write!(f, "IL"),
-            Region::State(USState::IN) => write!(f, "IN"),
-            Region::State(USState::IA) => write!(f, "IA"),
-            Region::State(USState::KS) => write!(f, "KS"),
-            Region::State(USState::KY) => write!(f, "KY"),
-            Region::State(USState::LA) => write!(f, "LA"),
-            Region::State(USState::ME) => write!(f, "ME"),
-            Region::State(USState::MD) => write!(f, "MD"),
-            Region::State(USState::MA) => write!(f, "MA"),
-            Region::State(USState::MI) => write!(f, "MI"),
-            Region::State(USState::MN) => write!(f, "MN"),
-            Region::State(USState::MS) => write!(f, "MS"),
-            Region::State(USState::MO) => write!(f, "MO"),
-            Region::State(USState::MT) => write!(f, "MT"),
-            Region::State(USState::NE) => write!(f, "NE"),
-            Region::State(USState::NV) => write!(f, "NV"),
-            Region::State(USState::NH) => write!(f, "NH"),
-            Region::State(USState::NJ) => write!(f, "NJ"),
-            Region::State(USState::NM) => write!(f, "NM"),
-            Region::State(USState::NY) => write!(f, "NY"),
-            Region::State(USState::NC) => write!(f, "NC"),
-            Region::State(USState::ND) => write!(f, "ND"),
-            Region::State(USState::OH) => write!(f, "OH"),
-            Region::State(USState::OK) => write!(f, "OK"),
-            Region::State(USState::OR) => write!(f, "OR"),
-            Region::State(USState::PA) => write!(f, "PA"),
-            Region::State(USState::RI) => write!(f, "RI"),
-            Region::State(USState::SC) => write!(f, "SC"),
-            Region::State(USState::SD) => write!(f, "SD"),
-            Region::State(USState::TN) => write!(f, "TN"),
-            Region::State(USState::TX) => write!(f, "TX"),
-            Region::State(USState::UT) => write!(f, "UT"),
-            Region::State(USState::VT) => write!(f, "VT"),
-            Region::State(USState::VA) => write!(f, "VA"),
-            Region::State(USState::WA) => write!(f, "WA"),
-            Region::State(USState::WV) => write!(f, "WV"),
-            Region::State(USState::WI) => write!(f, "WI"),
-            Region::State(USState::WY) => write!(f, "WY"),
-            Region::Province(CAProvince::AB) => write!(f, "AB"),
-            Region::Province(CAProvince::BC) => write!(f, "BC"),
-            Region::Province(CAProvince::MB) => write!(f, "MB"),
-            Region::Province(CAProvince::NB) => write!(f, "NB"),
-            Region::Province(CAProvince::NL) => write!(f, "NL"),
-            Region::Province(CAProvince::NS) => write!(f, "NS"),
-            Region::Province(CAProvince::ON) => write!(f, "ON"),
-            Region::Province(CAProvince::PE) => write!(f, "PE"),
-            Region::Province(CAProvince::QC) => write!(f, "QC"),
-            Region::Province(CAProvince::SK) => write!(f, "SK"),
-            Region::Territory(CATerritory::NT) => write!(f, "NT"),
-            Region::Territory(CATerritory::NU) => write!(f, "NU"),
-            Region::Territory(CATerritory::YT) => write!(f, "YT"),
-            Region::None => write!(f, ""),
-        }
-    }
-}
-
+/// City is an abstraction above CityData holding information on a single city (stored at a
+/// specific index in CityData)
 #[derive(Debug)]
 pub struct City<'a> {
     name: &'a str,
@@ -197,6 +39,7 @@ pub struct City<'a> {
     longitude: f32,
 }
 
+/// Stores a GPS coordinate
 #[derive(Debug, Copy, Clone)]
 pub struct Coordinate {
     latitude: f32,
@@ -204,6 +47,7 @@ pub struct Coordinate {
 }
 
 impl Coordinate {
+    /// Instantiate a Coordinate instance with supplied latitude and longitude
     pub fn new(latitude: f32, longitude: f32) -> Coordinate {
         Coordinate {
             latitude,
@@ -212,6 +56,8 @@ impl Coordinate {
     }
 }
 
+/// FuzzyResult represents a result from our location weighted fuzzy search. Includes a score where
+/// 0 is worst and 1 is perfect match.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct FuzzyResult {
     city: String,
@@ -221,7 +67,9 @@ pub struct FuzzyResult {
 }
 
 impl FuzzyResult {
-    fn new(city_data: City, score: f32) -> FuzzyResult {
+    /// Takes in a City instance and score, and instantiates a new FuzzyResult
+    /// Which includes human readable formatting of city name, region and country
+    pub fn new(city_data: City, score: f32) -> FuzzyResult {
         let City {
             name,
             country,
@@ -240,6 +88,8 @@ impl FuzzyResult {
 }
 
 impl CityData {
+    /// Instantiates a new instance of CityData that is empty. Usually populated with
+    /// `populate_from_file` method
     pub fn new() -> Self {
         CityData {
             names: Vec::new(),
@@ -250,6 +100,14 @@ impl CityData {
         }
     }
 
+    /// Takes in a geonames file and matches countries and regions to our custom enum variants
+    /// It then adds each city in line by line to our CityData instance.
+    ///
+    /// Note that geonames file comes from: [http://download.geonames.org/export/dump](http://download.geonames.org/export/dump)
+    /// Nicer formatted version is available in the github project for this crate under
+    /// the data folder:
+    ///
+    /// [city-spellcheck github](https://github.com/PrismaPhonic/city-spellcheck)
     pub fn populate_from_file(&mut self, filename: &str) -> Result<(), Box<dyn Error>> {
         let buffer = fs::read_to_string(filename)?;
         let mut lines = buffer.lines();
@@ -355,8 +213,7 @@ impl CityData {
             "WV" => Region::State(USState::WV),
             "WI" => Region::State(USState::WI),
             "WY" => Region::State(USState::WY),
-            // we never hit the catch all - better way to write this?
-            _ => Region::State(USState::CA),
+            _ => Region::None,
         }
     }
 
@@ -375,6 +232,27 @@ impl CityData {
         self.longitudes.push(longitude);
     }
 
+    /// `get_city` is a function to get a city back from our `CityData` struct.
+    /// Helps us keep our data stored in a DoD fashion and provide
+    /// a higher level abstraction to retrieve each city based on index
+    ///
+    /// Supply an index and get back the city at that index.
+    ///
+    /// ## Example
+    ///
+    /// ```rust
+    ///
+    /// let mut cities = city_spellcheck::CityData::new();
+    ///
+    /// 	cities
+    ///     	.populate_from_file("data/cities_canada-usa-filtered.csv")
+    ///     	.unwrap();
+    ///        
+    ///		assert_eq!(
+    ///            format!("{:?}", cities.get_city(0)),
+    ///            "City { name: \"Abbotsford\", country: CA, region: Province(BC), latitude: 49.05798, longitude: -122.25257 }"
+    ///     );
+    /// ```
     pub fn get_city(&self, idx: usize) -> City {
         City {
             name: &self.names[idx],
@@ -386,7 +264,7 @@ impl CityData {
     }
 
     /// `total_score` takes into account location as well as
-    /// string distance using Levenshtein algorithm
+    /// string distance using sift4 algorithm
     pub fn total_score(&self, term: &str, idx: usize, loc: Option<Coordinate>) -> f32 {
         let city = &self.names[idx];
         let latitude = self.latitudes[idx];
@@ -448,7 +326,7 @@ impl CityData {
     }
 
     // Largest city in North America by area is NYC which is 8600 square km
-    // or 92 km away - setting a score of 92 as perfect 1.0
+    // or 92 km away - setting a dist of 92 as perfect 1.0
     fn dist_score(dist: f32) -> f32 {
         if dist < 92.0 {
             1.0
@@ -487,7 +365,7 @@ mod tests {
             40.7128,
             74.0060,
         );
-        assert_eq!(format!("{:?}", cities.get_city(0)), "City { name: \"New York City\", country: US, region: States(NY), latitude: 40.7128, longitude: 74.006 }");
+        assert_eq!(format!("{:?}", cities.get_city(0)), "City { name: \"New York City\", country: US, region: State(NY), latitude: 40.7128, longitude: 74.006 }");
     }
 
     #[test]
@@ -500,7 +378,7 @@ mod tests {
             37.7749,
             122.4194,
         );
-        assert_eq!(format!("{:?}", cities.get_city(0)), "City { name: \"San Francisco\", country: US, region: States(CA), latitude: 37.7749, longitude: 122.4194 }");
+        assert_eq!(format!("{:?}", cities.get_city(0)), "City { name: \"San Francisco\", country: US, region: State(CA), latitude: 37.7749, longitude: 122.4194 }");
     }
 
     #[test]
@@ -511,7 +389,7 @@ mod tests {
             .unwrap();
         assert_eq!(
             format!("{:?}", cities.get_city(0)),
-            "City { name: \"Abbotsford\", country: CA, region: Territory, latitude: 49.05798, longitude: -122.25257 }"
+            "City { name: \"Abbotsford\", country: CA, region: Province(BC), latitude: 49.05798, longitude: -122.25257 }"
         );
     }
 
@@ -560,7 +438,7 @@ mod tests {
         let results = cities.search("London", Some(london));
         assert_eq!(
             format!("{:?}", results),
-            "[FuzzyResult { city: \"London, , CA\", latitude: 42.98339, longitude: -81.23304, score: 1.0 }, FuzzyResult { city: \"London, OH, US\", latitude: 39.88645, longitude: -83.44825, score: 0.6252391 }, FuzzyResult { city: \"London, KY, US\", latitude: 37.12898, longitude: -84.08326, score: 0.6250727 }, FuzzyResult { city: \"Lemont, IL, US\", latitude: 41.67364, longitude: -88.00173, score: 0.52094036 }, FuzzyResult { city: \"Brant, , CA\", latitude: 43.1334, longitude: -80.34967, score: 0.5208334 }]"
+            "[FuzzyResult { city: \"London, ON, CA\", latitude: 42.98339, longitude: -81.23304, score: 1.0 }, FuzzyResult { city: \"London, OH, US\", latitude: 39.88645, longitude: -83.44825, score: 0.6252391 }, FuzzyResult { city: \"London, KY, US\", latitude: 37.12898, longitude: -84.08326, score: 0.6250727 }, FuzzyResult { city: \"Lemont, IL, US\", latitude: 41.67364, longitude: -88.00173, score: 0.52094036 }, FuzzyResult { city: \"Brant, ON, CA\", latitude: 43.1334, longitude: -80.34967, score: 0.5208334 }]"
         );
     }
 }
