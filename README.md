@@ -17,11 +17,11 @@ Currently only supports USA and Canada, working on expanding to other countries 
 
 ## Setup
 
-To use this library just add city_spellcheck to your `Cargo.toml` file:
+To use this library just add `city-spellcheck` to your `Cargo.toml` file:
 
 ```toml
 [dependencies]
-city_spellcheck = "0.1.0"
+city-spellcheck = "0.1.0"
 ```
 
 Now you can use it:

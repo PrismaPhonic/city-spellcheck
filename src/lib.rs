@@ -15,11 +15,11 @@
 //!
 //! # Setup
 //!
-//! To use this library just add city_spellcheck to your `Cargo.toml` file:
+//! To use this library just add `city-spellcheck` to your `Cargo.toml` file:
 //!
 //! ```toml
 //! [dependencies]
-//! city_spellcheck = "0.1.0"
+//! city-spellcheck = "0.1.0"
 //! ```
 //!
 //! Now you can use it:
@@ -294,8 +294,9 @@ impl CityData {
     /// # Example
     ///
     /// ```rust
+    /// use city_spellcheck::*;
     ///
-    /// let mut cities = city_spellcheck::CityData::new();
+    /// let mut cities = CityData::new();
     ///
     /// 	cities
     ///     	.populate_from_file("data/cities_canada-usa-filtered.csv")
@@ -324,7 +325,9 @@ impl CityData {
     /// # Example
     ///
     /// ```rust
-    /// let mut cities = city_spellcheck::CityData::new();
+    /// use city_spellcheck::*;
+    ///
+    /// let mut cities = CityData::new();
     /// cities
     ///     .populate_from_file("data/cities_canada-usa-filtered.csv")
     ///     .unwrap();
@@ -377,10 +380,12 @@ impl CityData {
     /// # Example
     ///
     /// ```rust
-    /// let sf = city_spellcheck::Coordinate::new(37.774929, -122.419416);
-    /// let nyc = city_spellcheck::Coordinate::new(40.730610, -73.935242);
+    /// use city_spellcheck::*;
     ///
-    /// assert_eq!(city_spellcheck::CityData::find_distance_earth(sf, nyc), 4135.694);
+    /// let sf = Coordinate::new(37.774929, -122.419416);
+    /// let nyc = Coordinate::new(40.730610, -73.935242);
+    ///
+    /// assert_eq!(CityData::find_distance_earth(sf, nyc), 4135.694);
     /// ```
     pub fn find_distance_earth(loc1: Coordinate, loc2: Coordinate) -> f32 {
         const R: f32 = 6372.8;
@@ -423,11 +428,13 @@ impl CityData {
     /// # Example
     ///
     /// ```rust
-    /// let mut cities = city_spellcheck::CityData::new();
+    /// use city_spellcheck::*;
+    ///
+    /// let mut cities = CityData::new();
     /// cities
     ///     .populate_from_file("data/cities_canada-usa-filtered.csv")
     ///     .unwrap();
-    /// let london = city_spellcheck::Coordinate::new(42.98339, -81.23304);
+    /// let london = Coordinate::new(42.98339, -81.23304);
     ///     
     /// let results = cities.search("London", Some(london));
     /// assert_eq!(

@@ -1,0 +1,1 @@
+initSidebarItems({"fn":[["connect",""]],"struct":[["Connection","Represents a stateful redis TCP connection."],["SharedConnection",""]],"trait":[["ConnectionLike",""]]});

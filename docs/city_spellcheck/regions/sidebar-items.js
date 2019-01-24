@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["CAProvince","An enum where the variants are all of the Canadian provinces"],["CATerritory","An enum where the variants are all of the Canadian territories"],["Region","Enum for country regions - currently just supports US and Canada (States, Territories, and Provinces)"],["USState","An enum of all US States"]]});
