@@ -50,5 +50,5 @@ assert_eq!(
     "[FuzzyResult { city: \"London, ON, CA\", latitude: 42.98339, longitude: -81.23304, score: 1.0 }, FuzzyResult { city: \"London, OH, US\", latitude: 39.88645, longitude: -83.44825, score: 0.6252391 }, FuzzyResult { city: \"London, KY, US\", latitude: 37.12898, longitude: -84.08326, score: 0.6250727 }, FuzzyResult { city: \"Lemont, IL, US\", latitude: 41.67364, longitude: -88.00173, score: 0.52094036 }, FuzzyResult { city: \"Brant, ON, CA\", latitude: 43.1334, longitude: -80.34967, score: 0.5208334 }]");
 ```
 
-Please explore the [documentation](https://docs.rs/city_spellcheck) to learn more. Nearly all useful methods are on the CityData
+Please explore the [documentation](https://docs.rs/city-spellcheck) to learn more. Nearly all useful methods are on the CityData
 struct.
