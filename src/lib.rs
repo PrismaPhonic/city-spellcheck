@@ -19,7 +19,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! city-spellcheck = "0.1.0"
+//! city-spellcheck = "0.1.1"
 //! ```
 //!
 //! Now you can use it:
