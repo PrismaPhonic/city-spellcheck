@@ -1,7 +1,7 @@
 #[macro_use]
 extern crate criterion;
 
-extern crate sift4;
+use sift4::*;
 
 use criterion::Criterion;
 
@@ -15,16 +15,6 @@ fn benchmark_populate_from_file(c: &mut Criterion) {
             cities
                 .populate_from_file("data/cities_canada-usa-filtered.csv")
                 .unwrap()
-        })
-    });
-}
-
-fn benchmark_populate_from_redis(c: &mut Criterion) {
-    let mut cities = CityData::new();
-    c.bench_function("load from redis", move |b| {
-        b.iter(|| {
-            cities
-                .populate_from_redis().unwrap();
         })
     });
 }
@@ -56,7 +46,7 @@ fn benchmark_sift3_dist(c: &mut Criterion) {
 fn benchmark_sift4_dist(c: &mut Criterion) {
     c.bench_function("sift4 dist", move |b| {
         b.iter(|| {
-            sift4::sift4_simple("Francisco", "San Francisco");
+            sift4("Francisco", "San Francisco");
         })
     });
 }
@@ -94,7 +84,7 @@ fn benchmark_search_with_gps(c: &mut Criterion) {
     c.bench_function("search", move |b| {
         b.iter(|| {
             let london = Coordinate::new(42.98339, -81.23304);
-            let results = cities.search("London", Some(london));
+            let _ = cities.search("London", Some(london));
         })
     });
 }
@@ -102,7 +92,6 @@ fn benchmark_search_with_gps(c: &mut Criterion) {
 criterion_group!(
     benches,
     benchmark_populate_from_file,
-    benchmark_populate_from_redis,
     benchmark_phys_dist,
     benchmark_levenshtein_dist,
     benchmark_sift3_dist,
@@ -112,4 +101,3 @@ criterion_group!(
     benchmark_total_score_gps,
 );
 criterion_main!(benches);
-
